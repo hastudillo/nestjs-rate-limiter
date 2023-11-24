@@ -1,8 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBasicAuth, ApiTags } from '@nestjs/swagger';
 
 import { AppService } from './app.service';
 
+@ApiBasicAuth()
 @ApiTags('private')
 @Controller('private')
 export class PrivateController {
