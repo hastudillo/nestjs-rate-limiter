@@ -3,7 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { envFilePath } from '../common/constants';
 import { PrivateController } from '../private.controller';
+import { PublicController } from '../public.controller';
 import { BasicAuthMiddleware } from './basic-auth.middleware';
+import { RateLimiterMiddleware } from './rate-limiter.middleware';
+import { RedisService } from './redis.service';
 
 @Global()
 @Module({
@@ -12,11 +15,16 @@ import { BasicAuthMiddleware } from './basic-auth.middleware';
       envFilePath,
     }),
   ],
-  providers: [ConfigService, Logger],
+  providers: [ConfigService, Logger, RedisService],
   exports: [ConfigService, Logger],
 })
 export class CoreModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(BasicAuthMiddleware).forRoutes(PrivateController);
+    // mind the order: first we need to identify the user in order to apply the correct rate
+    consumer
+      .apply(BasicAuthMiddleware)
+      .forRoutes(PrivateController)
+      .apply(RateLimiterMiddleware)
+      .forRoutes(PublicController, PrivateController);
   }
 }

@@ -30,7 +30,7 @@ export class BasicAuthMiddleware implements NestMiddleware {
    * @param req express Request
    * @param _res express Response (not used)
    * @param next express NextFunction
-   * @throws an exception that bubbles up
+   * @throws an exception that bubbles up (or executes next function)
    */
   use(req: Request, _res: Response, next: NextFunction): void {
     try {
