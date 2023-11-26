@@ -44,7 +44,7 @@ describe('PrivateController', () => {
         .mockResolvedValue([bookDtoMock]);
       const result = await controller.getAll();
       expect(result).toEqual([bookDtoMock]);
-      expect(spyOnGetAll).toHaveBeenCalledWith([objectIdMock]);
+      expect(spyOnGetAll).toHaveBeenCalledWith();
     });
   });
 
