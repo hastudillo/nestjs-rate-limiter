@@ -1,23 +1,72 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 
-import { AppService } from './app.service';
+import { bookDtoMock } from './books/book.dto.mock';
+import { BookService } from './books/book.service';
 import { PrivateController } from './private.controller';
+
+const objectIdMock: Types.ObjectId = new Types.ObjectId(
+  '000000000000000000000000',
+);
 
 describe('PrivateController', () => {
   let controller: PrivateController;
+  let service: BookService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [PrivateController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: BookService,
+          useValue: {
+            getAll: jest.fn(),
+            getOne: jest.fn(),
+            createOne: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     controller = app.get<PrivateController>(PrivateController);
+    service = app.get<BookService>(BookService);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(controller.getHello()).toBe('Hello World!');
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+    expect(service).toBeDefined();
+  });
+
+  describe('getAll', () => {
+    it('should return all books', async () => {
+      const spyOnGetAll = jest
+        .spyOn(service, 'getAll')
+        .mockResolvedValue([bookDtoMock]);
+      const result = await controller.getAll();
+      expect(result).toEqual([bookDtoMock]);
+      expect(spyOnGetAll).toHaveBeenCalledWith([objectIdMock]);
+    });
+  });
+
+  describe('getOne', () => {
+    it('should return a book given its id', async () => {
+      const spyOnGetOne = jest
+        .spyOn(service, 'getOne')
+        .mockResolvedValue(bookDtoMock);
+      const result = await controller.getOne(objectIdMock);
+      expect(result).toEqual(bookDtoMock);
+      expect(spyOnGetOne).toHaveBeenCalledWith(objectIdMock);
+    });
+  });
+
+  describe('insertOne', () => {
+    it('should return a book once created', async () => {
+      const spyOnCreateOne = jest
+        .spyOn(service, 'createOne')
+        .mockResolvedValue(bookDtoMock);
+      const result = await controller.insertOne(bookDtoMock);
+      expect(result).toEqual(bookDtoMock);
+      expect(spyOnCreateOne).toHaveBeenCalledWith(bookDtoMock);
     });
   });
 });

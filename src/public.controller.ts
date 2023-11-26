@@ -1,15 +1,33 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Controller, Get, HttpStatus, Param } from '@nestjs/common';
+import { ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 
-import { AppService } from './app.service';
+import { BookDto } from './books/book.dto';
+import { BookService } from './books/book.service';
+import { ParseObjectIdPipe } from './common/pipes/parse-objectid.pipe';
 
 @ApiTags('public')
 @Controller('public')
 export class PublicController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly bookService: BookService) {}
 
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Get('book/:bookId')
+  @ApiParam({
+    name: 'bookId',
+    required: true,
+  })
+  @ApiQuery({
+    name: 'bookId',
+    required: true,
+    description: 'bookId',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: BookDto,
+  })
+  async getOne(
+    @Param('bookId', ParseObjectIdPipe) bookId: Types.ObjectId,
+  ): Promise<BookDto | undefined> {
+    return this.bookService.getOne(bookId);
   }
 }

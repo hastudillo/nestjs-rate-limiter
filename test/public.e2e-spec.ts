@@ -20,7 +20,7 @@ describe('PublicController (e2e)', () => {
     await app.init();
   });
 
-  it('/public (GET)', (done) => {
+  it('/public/book/:bookId (GET)', (done) => {
     const configService: ConfigService = app.get(ConfigService);
     const parallelRuns = parseInt(
       configService.get<string>(EnvEnum.RATE_LIMIT_BY_IP),
@@ -28,7 +28,7 @@ describe('PublicController (e2e)', () => {
     let actualRuns = 0;
     const asyncTask = () => {
       request(app.getHttpServer())
-        .get('/public')
+        .get('/public/book/000000000000000000000000')
         .set({
           [authorizationHeader]: `${basicAuthPrefix} ${configService.get<string>(
             EnvEnum.AUTH_TOKEN,

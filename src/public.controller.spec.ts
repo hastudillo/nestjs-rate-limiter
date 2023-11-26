@@ -1,23 +1,48 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 
-import { AppService } from './app.service';
+import { bookDtoMock } from './books/book.dto.mock';
+import { BookService } from './books/book.service';
 import { PublicController } from './public.controller';
+
+const objectIdMock: Types.ObjectId = new Types.ObjectId(
+  '000000000000000000000000',
+);
 
 describe('PublicController', () => {
   let controller: PublicController;
+  let service: BookService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [PublicController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: BookService,
+          useValue: {
+            getOne: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     controller = app.get<PublicController>(PublicController);
+    service = app.get<BookService>(BookService);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(controller.getHello()).toBe('Hello World!');
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+    expect(service).toBeDefined();
+  });
+
+  describe('getOne', () => {
+    it('should return a book given its id', async () => {
+      const spyOnGetOne = jest
+        .spyOn(service, 'getOne')
+        .mockResolvedValue(bookDtoMock);
+      const result = await controller.getOne(objectIdMock);
+      expect(result).toEqual(bookDtoMock);
+      expect(spyOnGetOne).toHaveBeenCalledWith(objectIdMock);
     });
   });
 });
