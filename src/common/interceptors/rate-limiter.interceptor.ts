@@ -1,22 +1,28 @@
 import {
+  CallHandler,
+  ExecutionContext,
   HttpException,
   HttpExceptionBody,
   HttpStatus,
   Injectable,
   InternalServerErrorException,
   Logger,
-  NestMiddleware,
+  NestInterceptor,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { NextFunction, Request, Response } from 'express';
+import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
+import { Observable } from 'rxjs';
 
-import { customUserProperty, xForwardedForHeader } from '../common/constants';
-import { EnvEnum } from '../common/env.enum';
-import { RedisService } from './redis.service';
+import { RedisService } from '../../core/redis.service';
+import { RequestWeight } from '../decorators/request-weight.decorator';
+import { ConfigService } from '@nestjs/config';
+import { EnvEnum } from '../env.enum';
+import { customUserProperty, xForwardedForHeader } from '../constants';
 
 @Injectable()
-export class RateLimiterMiddleware implements NestMiddleware {
+export class RateLimiterInterceptor implements NestInterceptor {
   constructor(
+    private readonly reflector: Reflector,
     private readonly configService: ConfigService,
     private readonly logger: Logger,
     private readonly redisService: RedisService,
@@ -24,18 +30,17 @@ export class RateLimiterMiddleware implements NestMiddleware {
 
   /**
    * Limits the rate of requests following a Fixed Window algorithm
-   * It has to be used after BasicAuthMiddleware
    * If the client is authenticated (private routes) the rate limit is different than for public routes
+   * The request weight of an endpoint (by default 1) is get thanks to the RequestWeight decorator (via metadata)
    * @param req express Request
    * @param res express Response (not used)
    * @param next express NextFunction
    * @returns an exception (429 if rate limit reached) that bubbles up (or executes next function)
    */
-  async use(req: Request, _res: Response, next: NextFunction): Promise<any> {
-    let rateLimit: number;
-    let clientId: string;
-    let windowSize: number;
-    let numberOfRequestsAfterIncr: number;
+  async intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Promise<Observable<any> | undefined> {
     try {
       this.redisService.createClient(
         this.configService.get<string>(EnvEnum.REDIS_URL),
@@ -46,12 +51,29 @@ export class RateLimiterMiddleware implements NestMiddleware {
         'An error occurred when creating a connection to Redis',
       );
     }
+
+    let req: Request;
+    let requestWeight: number;
+    let rateLimit: number;
+    let clientId: string;
+    let windowSize: number;
+    let numberOfRequestsAfterIncr: number;
     try {
+      req = context.switchToHttp().getRequest();
+      requestWeight =
+        this.reflector.get(RequestWeight, context.getHandler()) ?? 1;
       rateLimit = parseInt(this.getRateLimit(req));
       clientId = this.getClientId(req);
       windowSize = parseInt(
         this.configService.get<string>(EnvEnum.WINDOW_SIZE_IN_SECONDS),
       );
+    } catch (err: unknown) {
+      throw new InternalServerErrorException(
+        `An error occurred when checking request, conext, env variables: ${err}`,
+      );
+    }
+
+    try {
       numberOfRequestsAfterIncr =
         await this.redisService.incrementKeyWithTimeout(clientId, windowSize);
       this.logger.log(
@@ -59,19 +81,21 @@ export class RateLimiterMiddleware implements NestMiddleware {
       );
     } catch (err: unknown) {
       throw new InternalServerErrorException(
-        `An error occurred when checking the request: ${err}`,
+        `An error occurred when incrementing the key: ${err}`,
       );
     }
-    if (numberOfRequestsAfterIncr > rateLimit) {
-      let ttl: number;
-      if (numberOfRequestsAfterIncr === 1) {
-        ttl = windowSize;
-      } else {
-        ttl = await this.redisService.getTtl(clientId);
-      }
-      this.raiseTooManyRequestsException(ttl);
+
+    const exceedsTheLimit: boolean =
+      numberOfRequestsAfterIncr > rateLimit / requestWeight;
+    if (exceedsTheLimit) {
+      await this.raiseTooManyRequestsException(
+        numberOfRequestsAfterIncr,
+        windowSize,
+        clientId,
+      );
     }
-    next();
+
+    return next.handle();
   }
 
   private getClientId(req: Request): string {
@@ -99,7 +123,17 @@ export class RateLimiterMiddleware implements NestMiddleware {
     return this.configService.get<string>(EnvEnum.RATE_LIMIT_BY_IP);
   }
 
-  private raiseTooManyRequestsException(ttl: number): void {
+  private async raiseTooManyRequestsException(
+    numberOfRequestsAfterIncr: number,
+    windowSize: number,
+    clientId: string,
+  ): Promise<void> {
+    let ttl: number;
+    if (numberOfRequestsAfterIncr === 1) {
+      ttl = windowSize;
+    } else {
+      ttl = await this.redisService.getTtl(clientId);
+    }
     const date: Date = new Date();
     date.setSeconds(date.getSeconds() + ttl);
     const httpExceptionBody: HttpExceptionBody = HttpException.createBody(

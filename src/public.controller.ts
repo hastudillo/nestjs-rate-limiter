@@ -1,17 +1,32 @@
-import { Controller, Get, HttpStatus, Param } from '@nestjs/common';
-import { ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  ApiParam,
+  ApiQuery,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Types } from 'mongoose';
 
 import { BookDto } from './books/book.dto';
 import { BookService } from './books/book.service';
 import { ParseObjectIdPipe } from './common/pipes/parse-objectid.pipe';
+import { RateLimiterInterceptor } from './common/interceptors/rate-limiter.interceptor';
 
-@ApiTags('public')
+@UseInterceptors(RateLimiterInterceptor)
 @Controller('public')
+@ApiTags('public')
 export class PublicController {
   constructor(private readonly bookService: BookService) {}
 
   @Get('book/:bookId')
+  @ApiOperation({ summary: 'Request weight = 1' })
   @ApiParam({
     name: 'bookId',
     required: true,

@@ -2,16 +2,22 @@
 
 ## Description
 
-Simple [Nest](https://github.com/nestjs/nest) application that implements a fixed window rate limiter for two type of routes:
+Simple [Nest](https://github.com/nestjs/nest) application that implements a fixed window rate limiter for two types of routes:
 
 - `/private`: under Basic Auth, with a default rate limit of 200 req/hour
+  - `/book/{bookId} POST`: creates a book given a body (request weight = 1)... Needed to test with real data, not needed for testing rate limiter.
+  - `/book/{bookId} GET`: returns a book given its id (request weight = 1)
+  - `/books GET`: returns all the books (request weight = 5)
 - `/public`: with a default rate limit of 100 req/hour
+  - `/book/{bookId} GET`: returns a book given its id (request weight = 1)
 
-NB. For further details about the endpoints, please refer to the OpenAPI Swagger [page](http://localhost:3000/api).
+For further details about the endpoints, please refer to the OpenAPI Swagger [page](http://localhost:3000/api).
+
+NB. I am aware the routes and endpoints are not very compliant with the REST standards.
 
 In order to implement a rate limiter, the application relies on a Redis data store.
 
-It includes a `development.env` file with the following variables:
+The application includes a `development.env` file with the following needed environement variables:
 
 - `PORT`: the port in which the application runs (default is 3000)
 - `AUTH_TOKEN`: the base 64 string corresponding to the Basic Auth credentials (by default `am9obkBleGFtcGxlLmNvbTphYmMxMjM=`, corresponding to `john@example.com` : `abc123`; cf. [this online generator](https://www.debugbear.com/basic-auth-header-generator))
@@ -89,7 +95,7 @@ For a quick benchmark we recommend `ab`, the tool distributed with [Apache HTTP 
 $ ab -n 4000 -c 100 -l -v 2 "http://localhost:3000/public/book/000000000000000000000000" > log.txt
 ```
 
-This command will perform 4000 HTTP requests (in ~7s with a rate of >500 RPS, old Windows 10 computer). Here we can see the responses to the first requests have status code OK, and non-2xx responses when the rate limit is reached and from then on.
+This command will perform 4000 HTTP requests (in ~7s with a rate of >500 RPS, old Windows 10 computer) on GET endpoints where the request weight is 1. Here we can see the responses to the first requests have status code OK, and non-2xx responses when the rate limit is reached and from then on.
 
 NB: Follow [this](https://www.cedric-dumont.com/2017/02/01/install-apache-benchmarking-tool-ab-on-windows/) for Windows installation.
 

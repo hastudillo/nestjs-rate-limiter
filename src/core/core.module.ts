@@ -4,9 +4,7 @@ import { MongooseModule, MongooseModuleFactoryOptions } from '@nestjs/mongoose';
 
 import { envFilePath } from '../common/constants';
 import { PrivateController } from '../private.controller';
-import { PublicController } from '../public.controller';
 import { BasicAuthMiddleware } from './basic-auth.middleware';
-import { RateLimiterMiddleware } from './rate-limiter.middleware';
 import { RedisService } from './redis.service';
 
 @Global()
@@ -27,15 +25,10 @@ import { RedisService } from './redis.service';
     }),
   ],
   providers: [ConfigService, Logger, RedisService],
-  exports: [ConfigService, Logger],
+  exports: [ConfigService, Logger, RedisService],
 })
 export class CoreModule {
   configure(consumer: MiddlewareConsumer) {
-    // mind the order: first we need to identify the user in order to apply the correct rate
-    consumer
-      .apply(BasicAuthMiddleware)
-      .forRoutes(PrivateController)
-      .apply(RateLimiterMiddleware)
-      .forRoutes(PublicController, PrivateController);
+    consumer.apply(BasicAuthMiddleware).forRoutes(PrivateController);
   }
 }

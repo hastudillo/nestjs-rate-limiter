@@ -4,6 +4,9 @@ import { Types } from 'mongoose';
 import { bookDtoMock } from './books/book.dto.mock';
 import { BookService } from './books/book.service';
 import { PublicController } from './public.controller';
+import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
+import { RedisService } from './core/redis.service';
 
 const objectIdMock: Types.ObjectId = new Types.ObjectId(
   '000000000000000000000000',
@@ -21,6 +24,22 @@ describe('PublicController', () => {
           provide: BookService,
           useValue: {
             getOne: jest.fn(),
+          },
+        },
+        ConfigService,
+        {
+          provide: Logger,
+          useValue: {
+            log: jest.fn(),
+          },
+        },
+        {
+          provide: RedisService,
+          useValue: {
+            createClient: jest.fn(),
+            checkConnection: jest.fn(),
+            incrementKeyWithTimeout: jest.fn(),
+            getTtl: jest.fn(),
           },
         },
       ],
