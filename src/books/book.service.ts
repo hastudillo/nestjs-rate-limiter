@@ -9,12 +9,12 @@ import { Book, BookDocument } from './book.schema';
 export class BookService {
   constructor(@InjectModel(Book.name) private bookModel: Model<BookDocument>) {}
 
-  async getOne(id: Types.ObjectId): Promise<BookDto | undefined> {
-    return this.bookModel.findById(id).lean();
-  }
-
   async getAll(): Promise<BookDto[]> {
     return this.bookModel.find().lean();
+  }
+
+  async getOne(id: Types.ObjectId): Promise<BookDto | undefined> {
+    return this.bookModel.findById(id).lean();
   }
 
   async createOne(book: BookDto): Promise<BookDto> {

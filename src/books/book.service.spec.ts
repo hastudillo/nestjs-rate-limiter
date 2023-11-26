@@ -43,9 +43,9 @@ describe('BookService', () => {
       const spyOnLean = jest
         .spyOn(bookModelMock, 'lean')
         .mockImplementation(() => [bookDtoMock]);
-      const result = await service.getOne(objectIdMock);
+      const result = await service.getAll();
       expect(result).toEqual([bookDtoMock]);
-      expect(spyOnFind).toHaveBeenCalledWith(objectIdMock);
+      expect(spyOnFind).toHaveBeenCalledWith();
       expect(spyOnLean).toHaveBeenCalledWith();
     });
   });
