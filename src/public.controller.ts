@@ -25,7 +25,7 @@ import { RateLimiterInterceptor } from './common/interceptors/rate-limiter.inter
 export class PublicController {
   constructor(private readonly bookService: BookService) {}
 
-  @Get('book/:bookId')
+  @Get('books/:bookId')
   @ApiOperation({ summary: 'Request weight = 1' })
   @ApiParam({
     name: 'bookId',

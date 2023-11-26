@@ -42,7 +42,7 @@ export class PrivateController {
     return this.bookService.getAll();
   }
 
-  @Get('book/:bookId')
+  @Get('books/:bookId')
   @ApiOperation({ summary: 'Request weight = 1' })
   @ApiParam({
     name: 'bookId',
@@ -62,7 +62,7 @@ export class PrivateController {
     return this.bookService.getOne(bookId);
   }
 
-  @Post('book')
+  @Post('books')
   @ApiOperation({ summary: 'Request weight = 1' })
   @ApiBody({ type: BookDto, required: true })
   @ApiResponse({

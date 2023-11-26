@@ -5,15 +5,13 @@
 Simple [Nest](https://github.com/nestjs/nest) application that implements a fixed window rate limiter for two types of routes:
 
 - `/private`: under Basic Auth, with a default rate limit of 200 req/hour
-  - `/book/{bookId} POST`: creates a book given a body (request weight = 1)... Needed to test with real data, not needed for testing rate limiter.
-  - `/book/{bookId} GET`: returns a book given its id (request weight = 1)
+  - `/books/{bookId} POST`: creates a book given a body (request weight = 1)... Needed to test with real data, not needed for testing rate limiter.
+  - `/books/{bookId} GET`: returns a book given its id (request weight = 1)
   - `/books GET`: returns all the books (request weight = 5)
 - `/public`: with a default rate limit of 100 req/hour
-  - `/book/{bookId} GET`: returns a book given its id (request weight = 1)
+  - `/books/{bookId} GET`: returns a book given its id (request weight = 1)
 
 For further details about the endpoints, please refer to the OpenAPI Swagger [page](http://localhost:3000/api).
-
-NB. I am aware the routes and endpoints are not very compliant with the REST standards.
 
 In order to implement a rate limiter, the application relies on a Redis data store.
 
